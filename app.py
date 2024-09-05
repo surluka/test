@@ -62,10 +62,12 @@ def get_memory_history(_):
 
 @st.cache_data(show_spinner="Embedding file...")
 def embed_file(file):
-
     file_path = f"./.cache/files/{file.name}"
-    folder_path = os.path.dirname(file_path)
 
+    # 폴더 경로만 추출 (파일명 제외)
+    folder_path = os.path.dirname(file_path)
+    
+    # 폴더가 존재하는지 확인하고, 없으면 생성
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
 
@@ -83,7 +85,7 @@ def embed_file(file):
     )
     loader = UnstructuredFileLoader(file_path)
     docs = loader.load_and_split(text_splitter=splitter)
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(openai_api_key=api_key)
     cached_embeddings = CacheBackedEmbeddings.from_bytes_store(embeddings, cache_dir)
     vectorstore = FAISS.from_documents(docs, cached_embeddings)
     retriever = vectorstore.as_retriever()
