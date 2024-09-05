@@ -9,6 +9,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.callbacks.base import BaseCallbackHandler
 import streamlit as st
 from langchain.memory import ConversationBufferMemory
+import openai
 
 st.set_page_config(
     page_title="DocumentGPT",
@@ -125,11 +126,35 @@ Upload your files on the sidebar.
 """
 )
 
+def check_openai_api_key(key):
+    try:
+        openai.api_key = key
+        openai.Model.list()
+        return True
+    except Exception:
+        return False       
+
+
 with st.sidebar:
-    file = st.file_uploader(
-        "Upload a .txt .pdf or .docx file",
-        type=["pdf", "txt", "docx"],
-    )
+    
+    key = st.text_input("api key please!", type="password").strip()
+
+    if check_openai_api_key(key):
+        st.write("먹음")
+        file = st.file_uploader(
+            "Upload a .txt .pdf or .docx file",
+            type=["pdf", "txt", "docx"],
+        )
+    else:
+        file =[]
+        st.write("안먹음")
+
+    st.link_button("Go To Git", "https://github.com/surluka/test", help=None, type="primary")
+
+    code = open('app.py','r',encoding="UTF-8").read()
+    st.code(code, language="python")
+
+
 
 if file:
        
