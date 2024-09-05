@@ -8,6 +8,7 @@ from langchain.vectorstores.faiss import FAISS
 from langchain.chat_models import ChatOpenAI
 from langchain.callbacks.base import BaseCallbackHandler
 import streamlit as st
+from langchain.memory import ConversationBufferMemory
 
 st.set_page_config(
     page_title="DocumentGPT",
@@ -29,12 +30,26 @@ class ChatCallbackHandler(BaseCallbackHandler):
 
 
 llm = ChatOpenAI(
+    model="gpt-4o-mini-2024-07-18",
     temperature=0.1,
     streaming=True,
     callbacks=[
         ChatCallbackHandler(),
     ],
 )
+
+memory = ConversationBufferMemory(
+    llm=llm,
+    max_token_limit=80,
+    return_messages=True
+)
+
+def add_memory_message(input, output):
+    memory.save_context({"input": input}, {"output": output})
+
+
+def get_memory_history(_):
+    return memory.load_memory_variables({})["history"]
 
 
 @st.cache_data(show_spinner="Embedding file...")
@@ -90,6 +105,7 @@ prompt = ChatPromptTemplate.from_messages(
             Answer the question using ONLY the following context. If you don't know the answer just say you don't know. DON'T make anything up.
             
             Context: {context}
+            history : {chat_history}
             """,
         ),
         ("human", "{question}"),
@@ -116,15 +132,18 @@ with st.sidebar:
     )
 
 if file:
+       
     retriever = embed_file(file)
     send_message("I'm ready! Ask away!", "ai", save=False)
     paint_history()
+
     message = st.chat_input("Ask anything about your file...")
     if message:
         send_message(message, "human")
         chain = (
             {
                 "context": retriever | RunnableLambda(format_docs),
+                "chat_history": RunnableLambda(get_memory_history),
                 "question": RunnablePassthrough(),
             }
             | prompt
@@ -133,6 +152,11 @@ if file:
         with st.chat_message("ai"):
             response = chain.invoke(message)
 
+        add_memory_message(message, response.content)
+        st.session_state["history_message"] += get_memory_history(message)
+        # st.write("session state : ", st.session_state["history_message"])    
+
 
 else:
     st.session_state["messages"] = []
+    st.session_state["history_message"] = []
