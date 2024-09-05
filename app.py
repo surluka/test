@@ -10,6 +10,13 @@ from langchain.callbacks.base import BaseCallbackHandler
 import streamlit as st
 from langchain.memory import ConversationBufferMemory
 import openai
+import os
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(levelname)s] %(message)s',
+)
 
 st.set_page_config(
     page_title="DocumentGPT",
@@ -55,8 +62,17 @@ def get_memory_history(_):
 
 @st.cache_data(show_spinner="Embedding file...")
 def embed_file(file):
-    file_content = file.read()
+
     file_path = f"./.cache/files/{file.name}"
+    folder_path = os.path.dirname(file_path)
+
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    logging.info(f'folder_path: {folder_path}')
+    logging.info(f'file_path: {file_path}')
+
+    file_content = file.read()
     with open(file_path, "wb") as f:
         f.write(file_content)
     cache_dir = LocalFileStore(f"./.cache/embeddings/{file.name}")
