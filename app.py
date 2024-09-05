@@ -63,11 +63,7 @@ def get_memory_history(_):
 @st.cache_data(show_spinner="Embedding file...")
 def embed_file(file):
     file_path = f"./.cache/files/{file.name}"
-
-    # 폴더 경로만 추출 (파일명 제외)
-    folder_path = os.path.dirname(file_path)
-    
-    # 폴더가 존재하는지 확인하고, 없으면 생성
+    folder_path = os.path.dirname(file_path) 
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
 
